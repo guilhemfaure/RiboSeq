@@ -50,18 +50,18 @@ class GSE:
 
         d_species = {}
         with open(self.gse+'.sample', 'w') as fout:
-            fout.write('# Comment the sample you do not want to use\n')
+            fout.write('# Comment the sample you do not want to use\n# sampleIDGSM species sampleName  sampleGenome sampleIDSRX')
 
             for sample_name,\
                 sample_id, \
                 sample_species, \
                 sample_genome_assembly, \
-                sample_URL\
+                sample_srx\
                     in self.l_sample:
                 if sample_species not in d_species:
                     d_species[sample_species] = [0,sample_genome_assembly]
                 d_species[sample_species][0] += 1
-                fout.write('\t'.join((sample_species, sample_name, sample_id, sample_genome_assembly, ' '.join(sample_URL)))+'\n')
+                fout.write('\t'.join((sample_id, sample_species, sample_name, sample_genome_assembly, ' '.join(sample_srx)))+'\n')
 
         for species in d_species:
             print(species, d_species[species][0], d_species[species][1])
@@ -120,7 +120,7 @@ class GSE:
     def get_sample_from_xml(self):
         '''Adapted from JHussmann
         Get data from th xml
-        Returns a list of (sample_name, sample_id, sample_species, sample_genome_assembly, sample_URL) tuples.
+        Returns a list of (sample_name, sample_id, sample_species, sample_genome_assembly, sample_srx) tuples.
         '''
 
 
@@ -132,7 +132,7 @@ class GSE:
 
             if child.tag.endswith('Sample'):
                 sample_id = child.attrib['iid']
-                sample_URL = []
+                sample_srx = []
                 sample_name = None
                 sample_species = None
                 sample_genome_assembly = None
@@ -152,7 +152,8 @@ class GSE:
 
 
                     elif grand.tag.endswith('Supplementary-Data') and grand.attrib['type'] == 'SRA Experiment':
-                        sample_URL.append(grand.text.strip())
+                        sample_srr = os.path.basename(grand.text.strip())
+                        sample_srx.append(sample_srr)
 
                     # Grab the species
                     elif grand.tag.endswith('Channel'):
@@ -165,7 +166,7 @@ class GSE:
                             if line.startswith('Genome_build'):
                                 sample_genome_assembly =  line.split('Genome_build:')[1].strip()
 
-                l_sample.append((sample_name, sample_id, sample_species, sample_genome_assembly, sample_URL))
+                l_sample.append((sample_name, sample_id, sample_species, sample_genome_assembly, sample_srx))
 
 
         return l_sample
@@ -179,8 +180,6 @@ if __name__ == '__main__':
     parser.add_option('-g', '--gse', dest='gse', help='GSE identification')
     parser.add_option('-w', '--workdir', dest='workdir', help='Workdir, where .xml and .sample will be generated', default=None)
     (options, args) = parser.parse_args()
-
-
 
     if options.gse == None:
         parser.error("You should provide a GSE number with -g or --gse, -h for help")
