@@ -52,14 +52,19 @@ class GSE:
         with open(self.gse+'.sample', 'w') as fout:
             fout.write('# Comment the sample you do not want to use\n')
 
-            for sample_name, sample_id, sample_species, sample_URL in self.l_sample:
+            for sample_name,\
+                sample_id, \
+                sample_species, \
+                sample_genome_assembly, \
+                sample_URL\
+                    in self.l_sample:
                 if sample_species not in d_species:
-                    d_species[sample_species] = 0
-                d_species[sample_species] += 1
-                fout.write('\t'.join((sample_species, sample_name, sample_id, ' '.join(sample_URL)))+'\n')
+                    d_species[sample_species] = [0,sample_genome_assembly]
+                d_species[sample_species][0] += 1
+                fout.write('\t'.join((sample_species, sample_name, sample_id, sample_genome_assembly, ' '.join(sample_URL)))+'\n')
 
         for species in d_species:
-            print(species, d_species[species])
+            print(species, d_species[species][0], d_species[species][1])
 
         print('Total number of sample', len(self.l_sample))
         print('Edit your sample file, comment the samples', self.gse+'.sample')
@@ -115,7 +120,7 @@ class GSE:
     def get_sample_from_xml(self):
         '''Adapted from JHussmann
         Get data from th xml
-        Returns a list of (sample_name, sample_id, sample_species, sample_URL) tuples.
+        Returns a list of (sample_name, sample_id, sample_species, sample_genome_assembly, sample_URL) tuples.
         '''
 
 
@@ -130,6 +135,7 @@ class GSE:
                 sample_URL = []
                 sample_name = None
                 sample_species = None
+                sample_genome_assembly = None
                 for grand in child:
 
                     if grand.tag.endswith('Title'):
@@ -153,7 +159,13 @@ class GSE:
                         for great in grand:
                             if great.tag.endswith('Organism'):
                                 sample_species = great.text.strip()
-                l_sample.append((sample_name, sample_id, sample_species, sample_URL))
+
+                    elif grand.tag.endswith('Data-Processing'):
+                        for line in grand.text.split('\n'):
+                            if line.startswith('Genome_build'):
+                                sample_genome_assembly =  line.split('Genome_build:')[1].strip()
+
+                l_sample.append((sample_name, sample_id, sample_species, sample_genome_assembly, sample_URL))
 
 
         return l_sample
