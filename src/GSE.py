@@ -162,12 +162,15 @@ class GSE:
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser()
+    usage = "usage: %prog [-h -w <workdir>] -g <GSEnumber>"
+    parser = optparse.OptionParser(usage = usage)
     parser.add_option('-g', '--gse', dest='gse', help='GSE identification')
     parser.add_option('-w', '--workdir', dest='workdir', help='Workdir, where .xml and .sample will be generated', default=None)
     (options, args) = parser.parse_args()
 
+
+
     if options.gse == None:
-        parser.error("You should provide a GSE number with -g or --gse")
+        parser.error("You should provide a GSE number with -g or --gse, -h for help")
 
     GSE(options.gse, options.workdir)
