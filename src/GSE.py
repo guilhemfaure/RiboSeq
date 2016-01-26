@@ -1,5 +1,6 @@
 import os
 import subprocess
+import urllib2
 
 class GSE:
 
@@ -15,9 +16,9 @@ class GSE:
         self.d_workdir = d_workdir
 
         # Create Workdir
-        self.setup_dir
+        self.setup_dir()
 
-        self.get_xml()
+        self.path_xml = self.get_xml()
 
     def setup_dir(self):
         '''
@@ -26,30 +27,34 @@ class GSE:
         :return:
         '''
 
-        p_root = os.path.join(self.d_workdir, self.gse)
-        if not os.path.isdir(p_root):
-            os.makedirs(p_root)
-            print('Create workdir', p_root)
+        path_root = os.path.join(self.d_workdir, self.gse)
+        if not os.path.isdir(path_root):
+            os.makedirs(path_root)
+            print('Create workdir', path_root)
         else:
-            print('Workdir existing', p_root)
+            print('Workdir existing', path_root)
 
-        os.chdir(p_root)
+        os.chdir(path_root)
+        print('Moving to', os.getcwd())
 
         return None
 
     def get_xml(self):
         '''
-
-        :return:
+        Download xml file of the experiment
+        :return: path of the xml file in gz
         '''
 
         xml_url_template = 'ftp://ftp.ncbi.nlm.nih.gov/geo/series/{prefix}nnn/{accession}/miniml/{accession}_family.xml.tgz'
         xml_url = xml_url_template.format(prefix = self.gse[:5],
                                           accession = self.gse)
 
-        wget_command = ['wget', '--quiet', '-P', paper_dir, xml_url]
-        subprocess.check_call(wget_command)
+        f_xml = urllib2.urlopen(xml_url, os.path.basename(xml_url))
+        with open(self.gse+'.xml.gz', 'wb') as f: f.write(f_xml.read())
+        print('Download', self.gse+'.xml.gz')
+
+        return self.gse+'.xml.gz'
 
 if __name__ == '__main__':
 
-    GSE('GSE67387', '../../RiboSeq_dev')
+    GSE('GSE67387', '../../../RiboSeq_dev')
