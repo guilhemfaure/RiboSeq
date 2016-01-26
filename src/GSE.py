@@ -50,7 +50,7 @@ class GSE:
 
         d_species = {}
         with open(self.gse+'.sample', 'w') as fout:
-            fout.write('# Comment the sample you do not want to use\n# sampleIDGSM species sampleName  sampleGenome sampleIDSRX')
+            fout.write('# Comment the sample you do not want to use\n# sampleIDGSM species sampleName  sampleGenome sampleIDSRX\n')
 
             for sample_name,\
                 sample_id, \
