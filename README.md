@@ -64,18 +64,18 @@ the SRR files. A GSE.sra is created where the script is launched and contains th
 
 #### SRA-Toolkit
 
-http://www.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?view=software
+http://www.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?view=software  
 Add the bin directory path to the $PATH or edit the path in the dependency.config
 
 To avoid to download cache in the ncbi dedicated directory, in bin directory, launch:    
-> ./vdb-config -i
+> ./vdb-config -i  
 + Unselect Enable Local File Caching  
 + Save  
 + Exit  
 
 #### EUTILS 
 
-http://www.ncbi.nlm.nih.gov/books/NBK179288/
+http://www.ncbi.nlm.nih.gov/books/NBK179288/  
 Simply execute the following code where you want install EUTILS
   
   
@@ -91,5 +91,5 @@ Add the bin directory path to the $PATH or edit the path in the dependency.confi
 
 
 #### Aspera (not used)
-http://downloads.asperasoft.com/connect2///
+http://downloads.asperasoft.com/connect2///  
 
