@@ -116,6 +116,24 @@ export PATH=$PATH:$HOME/edirect
 Add the bin directory path to the $PATH or edit the path in the dependency.config
 
 
+
+## ExtractSeq.py
+
+usage: ExtractSeq.py -g genbank
+option: -r output
+
+output:
++genbank.tRNA_rRNA or ouput
+
+  
+### What is Genbank:
+Genbank is a file format. These file contains annotations about a set of sequence or a whole genome.
+You can download then in the NCBI website. Make sure to take the full version.
+  
+### What -r does:
+By using the -r option, you ask to extract all tRNA and rRNA sequence in a fasta.
+
+
 #### Aspera (not used)
 http://downloads.asperasoft.com/connect2///  
 
