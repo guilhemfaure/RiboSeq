@@ -3,6 +3,32 @@
 Manage ribo-seq experiment from raw data
 
 
+
+gunzip -c data.fastq.gz | fastq_quality_filter -Q33 -q N –v -o data.fastq.filter_Nv 
+
+fastx_clipper -Q33 -a CTGTAGGCACCATCAAT -l 25 -c -n -v -i data.fastq -o data.fastq.clipper
+-Q33 to avoid unrecognize character , 
+-c discard sequence missing the adaptor
+-n keep sequence with unknow nt like N 
+-l 25 discard sequence shorter than 25
+
+
+
+fastq:
+
+clipper:CTGTAGGCACCATCAAT
+trimmer:2
+minlength:25
+
+
+
+## Protocole
+
+Find the GSE
+Download experience from GSE GSE.py
+Choose the experiment(s) from the gse.sample file
+Download SRA files with SRA.py
+
 ## GSE.py
 
 usage: GSE.py -g GSEnumber
