@@ -19,6 +19,10 @@ def genebank_extract_tRNA_rRNA(p_genbank, p_output = None):
     :return:
     '''
 
+    if p_output == None:
+        p_output = os.path.basename(p_genbank)+'.tRNA_rRNA'
+
+
     genome=SeqIO.read(p_genbank,'genbank')
 
     fasta_format = '>{type}|{genome}|position={start}-{stop}:{strand}|locus={locus}|gene={gene}|product={product}\n{seq}\n'
@@ -56,7 +60,7 @@ if __name__ == '__main__':
     parser.add_option('-r', '--rna', dest='p_rna', help='Extract tRNA and rRNA into a fasta file', default = None)
     (options, args) = parser.parse_args()
 
-    if options.p_genbank and options.p_rna:
+    if options.p_genbank:
         genebank_extract_tRNA_rRNA(options.p_genbank, options.p_rna)
     else:
         parser.error("You should provide a genbank file with -g or --genbank, -h for help")
