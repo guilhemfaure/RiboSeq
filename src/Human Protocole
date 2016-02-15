@@ -1,0 +1,55 @@
+Get Fastq: GEO
+Get genome: http://hgdownload.cse.ucsc.edu/downloads.html or NCBI
+Get annotation: http://genome.ucsc.edu/cgi-bin/hgTables?command=start
+Get rRNA: from
+A trick to get rRNA from UCSC
+Select "All Tables" from the group drop-down list
+Select the "rmsk" table from the table drop-down list
+Choose "GTF" as the output format
+Type a filename in "output file" so your browser downloads the result
+Click "create" next to filter
+Next to "repClass," type rRNA
+Next to free-form query, select "OR" and type repClass = "tRNA"
+Click submit on that page, then get output on the main page
+
+another website:
+http://webappl.blogspot.com/2015/02/extract-rrna-and-trna-features-from.html
+
+=====
+
+
+
+# Remove the adapter
+fastx_clipper -Q33 -a CTGTAGGCACCATCAAT -l 25 -c -n -v -i seq.fastq -o seq.clip
+
+# Remove 2 nt on all read
+fastx_trimmer -Q33 -f 2 -i seq.clip -o seq.trim
+
+
+# Build index for ncRNA
+bowtie2-build rRNA.fasta  rRNA
+
+
+# Download Genome assembly from UCSC
+for CHR in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y
+do
+     curl -O ftp://hgdownload.cse.ucsc.edu/goldenPath/hg19/chromosomes/chr${CHR}.fa.gz
+done
+
+# Unzip Genome
+gunzip chr*.fa.gz
+
+# Create Index for the Genome
+bowtie2-build chr1.fa,chr2.fa,chr3.fa,chr4.fa,chr5.fa,chr6.fa,chr7.fa,chr8.fa,chr9.fa,chr10.fa,chr11.fa,chr12.fa,chr13.fa,chr14.fa,chr15.fa,chr16.fa,chr17.fa,chr18.fa,chr19.fa,chr20.fa,chr21.fa,chr22.fa,chrX.fa,chrY.fa hg19
+
+# Align ncRNA to read and get the non-align read
+bowtie --seedlen=23 --un=XXX_norrna.fq rrna_seqs >/dev/null
+
+# Align reads to genome index in using gene coord GTF
+tophat --no-novel-juncs --output-dir XXX_vs_genome \
+--GTF hg19.gtf hg19 XXX_norrna.fq
+
+# Extract perfect alignment and create BAM file
+samtools view -h XXX_vs_genome/accepted_hits.bam | \
+grep –E ‘(NM:i:0)|(^@)’ | \
+samtools view –S b – > XXX_vs_genome.bam
