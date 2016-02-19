@@ -23,7 +23,10 @@ def download_sra(command, workdir):
 
     print ('Downloading', sample_gsm)
 
-    subprocess.run(command, check = True, shell = True)
+    try:
+        subprocess.run(command, check = True, shell = True)
+    except:
+        subprocess.call(command, shell = True)
 
     l_srr = os.listdir('.')
     os.chdir(p_ori)

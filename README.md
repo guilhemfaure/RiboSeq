@@ -5,7 +5,7 @@ Manage ribo-seq experiment from raw data
 
 
 gunzip -c data.fastq.gz | fastq_quality_filter -Q33 -q N –v -o data.fastq.filter_Nv 
-
+CTGTAGGCACCATCAAT
 fastx_clipper -Q33 -a CTGTAGGCACCATCAAT -l 25 -c -n -v -i data.fastq -o data.fastq.clipper
 -Q33 to avoid unrecognize character , 
 -c discard sequence missing the adaptor
