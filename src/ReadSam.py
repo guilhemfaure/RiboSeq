@@ -7,6 +7,7 @@ import sys
 import configparser
 import subprocess
 import optparse
+import numpy as np
 
 # try:
 #     import pysam
@@ -30,7 +31,7 @@ if __name__ == '__main__':
 
     read_bam = pysam.AlignmentFile(f_bam, "rb")
 
-
+    f_out = open('read_3p_count_150nt.res', 'w')
     for ite_gene, gene in enumerate(genome_gbk.features):
 
         if gene.type in ['CDS']:
@@ -40,46 +41,57 @@ if __name__ == '__main__':
             d_info['stop']      = gene.location.end.position
             d_info['strand']    = gene.location.strand
             d_info['seq']       = gene.extract(genome_gbk.seq)
+            d_info['gene']      = gene.qualifiers['gene']
+            d_info['locus']     = ','.join(gene.qualifiers['locus_tag'])
 
             print ('{seq} {strand}'.format(**d_info))
 
+
             print ( d_info['start'],  d_info['stop'])
-            for ite, pilup in enumerate(read_bam.pileup('gi|49175990|ref|NC_000913.2|',
-                                                          d_info['start'],
-                                                          d_info['stop'])):
-                print ('#####################')
-                print ( pilup.pos, pilup.n)
 
-                if ite > 50 :
-                    break
 
+            if d_info['strand'] != 1:
+                print (d_info['strand'])
                 continue
 
-            break
-                # for i in pilup.pileups:
-                #     print (i.alignment.query_sequence)
-                #     print (i.alignment.query_alignment_start)
-                #     print (i.alignment.query_alignment_end)
-                #     print (i.alignment.query_length)
-                #
-                #     print (i.alignment.reference_start)
-                #     print (i.alignment.reference_end)
+            d_read = {}
+            l_read = np.array([0]*150)
+
+            for ite, pileupcolumn in enumerate(read_bam.pileup('gi|49175990|ref|NC_000913.2|',
+                                                          d_info['start'],
+                                                          d_info['stop'])):
+                #print ('#####################')
+                #print ( pileupcolumn.pos, pileupcolumn.n)
 
 
+                for pileupread in pileupcolumn.pileups:
+                    if pileupread.alignment.get_tag('NM') != 0:
+                        continue
 
 
+                    # print (pileupread.alignment.query_name,
+                    #        pileupread.alignment.query_length,
+                    #        pileupread.alignment.reference_start,
+                    #        pileupread.alignment.reference_end
+                    #        )
+
+                    ''
 
 
-    # plus = 0
-    # minus = 0
-    # for ite, i in enumerate(file.fetch()):
-    #     seq_length = len(i.seq)
-    #     seq_3p_position = i.positions[-1]
-    #
-    #     strand = '-' if i.is_reverse else '+'
-    #
-    #     print(seq_length, seq_3p_position, strand)
-    #     break
+                    start = int(pileupread.alignment.reference_start)
+                    stop = int(pileupread.alignment.reference_end)
+
+                    position_3p_on_gene = stop-d_info['start']-1
 
 
+                    if position_3p_on_gene < 150:
 
+                        l_read[position_3p_on_gene] += 1
+
+            #print (l_read / sum(l_read))
+            for position, n_read in enumerate(l_read / sum(l_read)):
+                f_out.write ('{gene} {position} {read}\n'.
+                       format(gene = d_info['locus'],
+                              position = position,
+                              read = n_read))
+    f_out.close()
