@@ -22,6 +22,7 @@ import numpy as np
 from Bio import SeqIO
 import pysam
 
+
 if __name__ == '__main__':
 
     f_bam = sys.argv[1]
@@ -31,7 +32,9 @@ if __name__ == '__main__':
 
     read_bam = pysam.AlignmentFile(f_bam, "rb")
 
-    f_out = open('read_3p_count_150nt.res', 'w')
+
+
+    # CDS coords
     for ite_gene, gene in enumerate(genome_gbk.features):
 
         if gene.type in ['CDS']:
@@ -47,35 +50,23 @@ if __name__ == '__main__':
             print ('{seq} {strand}'.format(**d_info))
 
 
+            # Coord CDS
             print ( d_info['start'],  d_info['stop'])
 
-
+            # Plus strand
             if d_info['strand'] != 1:
                 print (d_info['strand'])
                 continue
 
-            d_read = {}
-            l_read = np.array([0]*150)
 
             for ite, pileupcolumn in enumerate(read_bam.pileup('gi|49175990|ref|NC_000913.2|',
                                                           d_info['start'],
                                                           d_info['stop'])):
-                #print ('#####################')
-                #print ( pileupcolumn.pos, pileupcolumn.n)
-
 
                 for pileupread in pileupcolumn.pileups:
                     if pileupread.alignment.get_tag('NM') != 0:
                         continue
 
-
-                    # print (pileupread.alignment.query_name,
-                    #        pileupread.alignment.query_length,
-                    #        pileupread.alignment.reference_start,
-                    #        pileupread.alignment.reference_end
-                    #        )
-
-                    ''
 
 
                     start = int(pileupread.alignment.reference_start)
@@ -84,9 +75,6 @@ if __name__ == '__main__':
                     position_3p_on_gene = stop-d_info['start']-1
 
 
-                    if position_3p_on_gene < 150:
-
-                        l_read[position_3p_on_gene] += 1
 
             #print (l_read / sum(l_read))
             for position, n_read in enumerate(l_read / sum(l_read)):

@@ -30,7 +30,7 @@ def genebank_extract_tRNA_rRNA(p_genbank, p_output = None):
 
 
     genome=SeqIO.read(p_genbank,'genbank')
-
+    print (type(genome.seq))
     fasta_format = '>{type}|{genome}|position={start}-{stop}:{strand}|locus={locus}|gene={gene}|product={product}\n{seq}\n'
 
     fout = open(p_output, 'w')

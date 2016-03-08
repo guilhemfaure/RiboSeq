@@ -3,7 +3,9 @@
 Manage ribo-seq experiment from raw data
 
 
+Download with fasta_dump
 
+Clip adapter
 gunzip -c data.fastq.gz | fastq_quality_filter -Q33 -q N –v -o data.fastq.filter_Nv 
 CTGTAGGCACCATCAAT
 fastx_clipper -Q33 -a CTGTAGGCACCATCAAT -l 25 -c -n -v -i data.fastq -o data.fastq.clipper
@@ -13,13 +15,24 @@ fastx_clipper -Q33 -a CTGTAGGCACCATCAAT -l 25 -c -n -v -i data.fastq -o data.fas
 -l 25 discard sequence shorter than 25
 
 
-
-fastq:
-
 clipper:CTGTAGGCACCATCAAT
 trimmer:2
 minlength:25
 
+
+Remove rRNA/tRNA
+gunzip -c {clip.gz} | \
+hisat2 \
+-x ../../../assembly/Hsapiens/hg19/tRNA_rRNA \
+--phred33 \
+--un-gz noRNA.fastq.gz \
+-p 8 \
+-t \
+-S RNA.sam
+
+
+
+Map to genome/transcriptome
 
 
 ## Protocole
