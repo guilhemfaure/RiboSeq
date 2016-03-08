@@ -1,6 +1,6 @@
 __author__ = 'Guilhem Faure'
-__description__ = '''ExtractSeq.py extract sequence from different format file
-  Already implemented Genbank and extraction of tRNA and rRNA sequence'''
+__description__ = '''Ribosome Occupancy reads bam index and extract the 3 prime position
+of each well aligned reads'''
 
 import os
 import sys
@@ -25,13 +25,30 @@ import pysam
 
 if __name__ == '__main__':
 
-    f_bam = sys.argv[1]
-    p_genbank = sys.argv[2]
-    p_output = sys.argv[3]
+    usage = "usage: %prog -b file.bam [-g <Genbank file> or -f <Genome file>] -o root.wig"
+    parser = optparse.OptionParser(usage = usage)
+    parser.add_option('-b', '--bam', dest='p_bam', help='Bam file', default = None)
+    parser.add_option('-g', '--genbank', dest='p_genbank', help='Genbank file', default = None)
+    parser.add_option('-f', '--fasta', dest='p_fasta', help='Fasta file', default = None)
+    parser.add_option('-o', '--output', dest='p_output', help='Root of wig files', default = None)
+    (options, args) = parser.parse_args()
 
-    genome_gbk = SeqIO.read(p_genbank,'genbank')
-    size_genome = len(genome_gbk.seq)
 
+    f_bam = options.p_bam
+
+    if options.p_genbank:
+        genome_gbk = SeqIO.read(options.p_genbank,'genbank')
+        size_genome = len(genome_gbk.seq)
+        # Find how to get id from genbank with Biopython
+    if options.p_fasta:
+        genome_fasta = SeqIO.read(open(options.p_fasta), "fasta")
+        gi = genome_fasta.id
+        size_genome = len(genome_fasta.seq)
+
+
+    p_output = options.p_output
+
+    sam_file = pysam.AlignmentFile(f_bam, "rb")
     sam_file = pysam.AlignmentFile(f_bam, "rb")
 
     print (size_genome)
@@ -42,7 +59,10 @@ if __name__ == '__main__':
 
 
     # REF start is 0 in BAM
-    for read in sam_file.fetch('gi|49175990|ref|NC_000913.2|', 0, size_genome):
+    # gi|16127994|ref|NC_000913.1|
+    # gi|49175990|ref|NC_000913.2|
+    # gi|556503834|ref|NC_000913.3|
+    for read in sam_file.fetch('gi|556503834|ref|NC_000913.3|', 0, size_genome):
         if read.get_tag('NM') != 0:
             continue
 
@@ -62,18 +82,16 @@ if __name__ == '__main__':
             d_rf['plus'][position_3p] += 1
 
 
-
-
-
     nb_read = sum(d_rf['minus']) + sum(d_rf['plus'])
+    m = 1000000 # to get RPM
     print ('Nb Read:', nb_read)
     with open(p_output+'_minus.wig', 'w') as fout:
         fout.write('Nb read {0}\n3 prime position \n'.format(nb_read))
-        fout.write('\n'.join( map(str, list( np.array(d_rf['minus']) / float(nb_read) ) )))
+        fout.write('\n'.join( map(str, list( np.array(d_rf['minus']) * m / float(nb_read) ) )))
 
     with open(p_output+'_plus.wig', 'w') as fout:
         fout.write('Nb read {0}\n3 prime position \n'.format(nb_read))
-        fout.write('\n'.join( map(str, list( np.array(d_rf['plus']) / float(nb_read) ) )))
+        fout.write('\n'.join( map(str, list( np.array(d_rf['plus']) * m / float(nb_read) ) )))
 
 
     print (size_genome)
