@@ -5,33 +5,49 @@ import os
 import configparser
 import subprocess
 import optparse
+import copy
+import sys
 
 
-def download_sra(command, workdir):
+def download_sra(command):
     '''
     Download SRR file in workdir
     :param command: command to download all SRR from GSM number
-    :param workdir: work directory
-    :return: list of SRR files downloaded
+    :return: stdout of download_sra
     '''
 
 
-    p_ori = os.getcwd()
-    if not os.path.exists(sample_gsm):
-        os.mkdir(sample_gsm)
-    os.chdir(sample_gsm)
-
     print ('Downloading', sample_gsm)
+    log_download_sra = subprocess.getoutput(command)
 
-    try:
-        subprocess.run(command, check = True, shell = True)
-    except:
-        subprocess.call(command, shell = True)
+    return log_download_sra
 
-    l_srr = os.listdir('.')
-    os.chdir(p_ori)
+def gsm2srr(command):
+    '''
 
-    return l_srr
+    :param command_gsm2srr: command to grab the SRR from the GSM
+    :return: srr_id
+    '''
+
+    print ('Getting the SRR identification')
+    srr_id = subprocess.getoutput(command)
+
+    return srr_id
+
+def clip_adapter(command):
+    '''
+    Clip adapter
+    :param command: command to clip adapter from gzip fastq
+    :return: log clip adapter
+    '''
+
+
+    print ('Clipping adapter', sample_gsm)
+
+    log_clip_adapter = subprocess.getoutput(command)
+
+    return log_clip_adapter
+
 
 if __name__ == '__main__':
 
@@ -39,11 +55,13 @@ if __name__ == '__main__':
     parser = optparse.OptionParser(usage = usage)
     parser.add_option('-g', '--gse', dest='gse', help='GSE sample generate by GSE.py')
     parser.add_option('-w', '--workdir', dest='workdir', help='Workdir output', default = None)
+    parser.add_option('-a', '--adapter', dest='adapter', help='adapter', default = 'CTGTAGGCACCATCAAT')
+    parser.add_option('-c', '--clip', dest='clip', action='store_true',
+                      help='clip adapter; use -a to specify adapter (default CTGTAGGCACCATCAAT)')
     (options, args) = parser.parse_args()
 
     if options.gse == None:
         parser.error("You should provide a GSEsample file with -g or --gse, -h for help")
-
 
 
     ## Loading dependency and command lines
@@ -54,10 +72,17 @@ if __name__ == '__main__':
     Config_command = configparser.ConfigParser()
     Config_command.read(os.path.join( p_d_script, "command.config"))
 
-    d_program = dict(dict(Config_dependancy['EUTILS']), **dict(Config_dependancy['SRATOOLKIT']))
+
+    d_options = copy.copy(Config_dependancy['EUTILS'])
+    d_options.update(Config_dependancy['SRATOOLKIT'])
+
+
 
     ## Output path
-    p_out = os.path.basename(options.gse).split('.')[0]+'.sra'
+    p_out = os.path.basename(options.gse).split('.')[0]+'.log'
+
+
+    p_root = os.getcwd()
 
     # Read GSE.sample and download selected samples
     with open(options.gse) as f:
@@ -67,23 +92,57 @@ if __name__ == '__main__':
             os.mkdir(options.workdir)
             os.chdir(options.workdir)
 
-        with open(p_out, 'w') as fout:
-            fout.write('#GSM and list of SRA files associated\n')
 
-            for line in f:
-                if line.startswith('#'):
-                    continue
-                sp = line.strip().split('\t')
-                sample_gsm = sp[0]
 
-                command_download_sra = Config_command['SRA']['download_sra'].format(**dict(d_program, **{'gsm':sample_gsm}))
+        # Read sample to download
+        for line in f:
+            if line.startswith('#'):
+                continue
+            sp = line.strip().split('\t')
+            sample_gsm = sp[0]
+            d_options['gsm'] = sample_gsm
 
-                l_srr = download_sra(command_download_sra, sample_gsm)
 
-                fout.write('{gsm}\t{nbsrr}\t{srr}\n'.format(gsm=sample_gsm,\
-                                                          nbsrr = len(l_srr),
-                                                          srr = ' '.join(l_srr)))
+            # Create GSM directory
+            if not os.path.exists(sample_gsm):
+                os.mkdir(sample_gsm)
+            os.chdir(sample_gsm)
 
-    print ( 'Downloaded SRA files', p_out   )
+            # Log file in each GSM directory
+            with open(sample_gsm, 'w') as fout:
+                fout.write('#Log '+ ' '.join(sys.argv)+'\n')
+
+                # Get SRR number
+                command_gsm2srr = Config_command['SRA']['gsm2srr'].format(**d_options)
+                fout.write(command_gsm2srr+'\n')
+                srr_id = gsm2srr(command_gsm2srr)
+                d_options['srr'] = srr_id
+                fout.write('GSM2SRR {0} {1}\n'.format(sample_gsm, srr_id))
+
+
+                # Download fastq.gz
+                command_download_sra = Config_command['SRA']['download_sra'].format(**d_options)
+                fout.write(command_download_sra+'\n')
+                log_download_sra = download_sra(command_download_sra)
+                fout.write(log_download_sra+'\n')
+
+                if options.clip is True:
+                    d_options.update(Config_dependancy['FASTX'])
+                    d_options['min_read_size'] = '25'
+                    d_options['adapter'] = options.adapter
+                    d_options['input_fastqgz'] = srr_id+'.fastq.gz'
+                    d_options['output_clip'] = srr_id+'_clip.fastq.gz'
+                    command_clip_adapter = Config_command['FASTX']['clip_adapter'].format(**d_options)
+                    fout.write(command_clip_adapter+'\n')
+                    log_clip_adapter = clip_adapter(command_clip_adapter)
+                    fout.write(log_clip_adapter+'\n')
+
+            # Coming back to root directory
+            os.chdir(p_root)
+
+
+    print ( 'Log file', p_root )
+
+
 
 
