@@ -6,17 +6,11 @@ import os
 import configparser
 import subprocess
 import optparse
-
-try:
-    from Bio import SeqIO
-except:
-    from VirtualEnvOnDemand import enableOnDemandImporter, ensureImportGlobal
-    enableOnDemandImporter()   # Activate the hook on the "import" keyword.
-    Bio = ensureImportGlobal('Bio', 'biopython')
-    from Bio import SeqIO
+import sys
+from Bio import SeqIO
 
 
-def genebank_extract_tRNA_rRNA(p_genbank, p_output = None):
+def genebank_extract_tRNA_rRNA(p_genbank, p_genome = None, p_output = None):
     '''
     Extract tRNA and rRNA from genbank file
     :param: p_genbank path to the genbank file
@@ -30,6 +24,14 @@ def genebank_extract_tRNA_rRNA(p_genbank, p_output = None):
 
 
     genome=SeqIO.read(p_genbank,'genbank')
+
+    if p_genome is None:
+        full_seq = genome.seq
+    else:
+        genome_fasta = SeqIO.read(p_genome, 'fasta')
+        full_seq = genome_fasta.seq
+
+
     print (type(genome.seq))
     fasta_format = '>{type}|{genome}|position={start}-{stop}:{strand}|locus={locus}|gene={gene}|product={product}\n{seq}\n'
 
@@ -40,13 +42,19 @@ def genebank_extract_tRNA_rRNA(p_genbank, p_output = None):
 
             d_info = {'type' : gene.type, 'genome':genome.id}
 
-            d_info['seq']       = gene.extract(genome.seq)
+            d_info['seq']       = gene.extract(full_seq)
             d_info['start']     = gene.location.start.position
             d_info['stop']      = gene.location.end.position
             d_info['strand']    = gene.location.strand
 
             d_info['product']   = ','.join(gene.qualifiers['product'])
-            d_info['gene']      = ','.join(gene.qualifiers['gene'])
+
+            if 'gene' not in gene.qualifiers:
+                d_info['gene'] = 'NA'
+            else:
+                d_info['gene'] = ','.join(gene.qualifiers['gene'])
+
+            #d_info['gene']      = ','.join(gene.qualifiers['gene'])
             d_info['locus']     = ','.join(gene.qualifiers['locus_tag'])
 
             fout.write(fasta_format.format(**d_info))
@@ -58,7 +66,7 @@ def genebank_extract_tRNA_rRNA(p_genbank, p_output = None):
 
     return None
 
-def genebank_extract_exon(p_genbank, p_output = None):
+def genebank_extract_exon(p_genbank, p_genome = None, p_output = None):
     '''
     Extract exons from genbank file
     :param: p_genbank path to the genbank file
@@ -73,6 +81,13 @@ def genebank_extract_exon(p_genbank, p_output = None):
 
     genome=SeqIO.read(p_genbank,'genbank')
 
+    if p_genome is None:
+        full_seq = genome.seq
+    else:
+        genome_fasta = SeqIO.read(p_genome, 'fasta')
+        full_seq = genome_fasta.seq
+
+
     fasta_format = '>{type}|{genome}|position={start}-{stop}:{strand}|locus={locus}|gene={gene}|product={product}\n{seq}\n'
 
     fout = open(p_output, 'w')
@@ -81,7 +96,7 @@ def genebank_extract_exon(p_genbank, p_output = None):
         if gene.type in ['CDS']:
             d_info = {'type' : gene.type, 'genome':genome.id}
 
-            d_info['seq']       = gene.extract(genome.seq)
+            d_info['seq']       = gene.extract(full_seq)
             d_info['start']     = gene.location.start.position
             d_info['stop']      = gene.location.end.position
             d_info['strand']    = gene.location.strand
@@ -116,19 +131,27 @@ def genebank_extract_exon(p_genbank, p_output = None):
 
 if __name__ == '__main__':
 
-    usage = "usage: %prog [-h -w <workdir>] -g <Genbank file> [-r tRNArRNA] [-e exon]"
+    usage = "usage: %prog [-h -w <workdir>] " \
+            "-g <Genbank file> " \
+            "[-r tRNArRNA] [-e exon] [-f genome.fasta if genbank incomplete]"
     parser = optparse.OptionParser(usage = usage)
     parser.add_option('-g', '--genbank', dest='p_genbank', help='Genbank file full size', default = None)
     parser.add_option('-r', '--rna', dest='p_rna', help='Extract tRNA and rRNA into a fasta file', default = None)
+    parser.add_option('-f', '--fasta', dest='p_genome', help='Full genome in Fasta', default = None)
     parser.add_option('-e', '--exon', dest='p_exon', help='Extract exons into a fasta file', default = None)
     (options, args) = parser.parse_args()
 
     if options.p_genbank:
 
-        if options.p_rna:
+        if options.p_genome and options.p_rna:
+            genebank_extract_tRNA_rRNA(options.p_genbank, options.p_genome, options.p_rna)
+        if options.p_rna and options.p_genome is None:
             genebank_extract_tRNA_rRNA(options.p_genbank, options.p_rna)
-        if options.p_exon:
+        if options.p_exon and options.p_genome:
+            genebank_extract_exon(options.p_genbank, options.p_genome, options.p_exon)
+        if options.p_exon and options.p_genome is None:
             genebank_extract_exon(options.p_genbank, options.p_exon)
+
     else:
         parser.error("You should provide a genbank file with -g or --genbank, -h for help")
 
