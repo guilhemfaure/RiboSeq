@@ -62,7 +62,7 @@ if __name__ == '__main__':
     # gi|16127994|ref|NC_000913.1|
     # gi|49175990|ref|NC_000913.2|
     # gi|556503834|ref|NC_000913.3|
-    for read in sam_file.fetch('gi|556503834|ref|NC_000913.3|', 0, size_genome):
+    for read in sam_file.fetch('gi|255767013|ref|NC_000964.3|', 0, size_genome):
         if read.get_tag('NM') != 0:
             continue
 

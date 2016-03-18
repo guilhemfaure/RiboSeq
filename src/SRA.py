@@ -58,6 +58,7 @@ if __name__ == '__main__':
     parser.add_option('-a', '--adapter', dest='adapter', help='adapter', default = 'CTGTAGGCACCATCAAT')
     parser.add_option('-c', '--clip', dest='clip', action='store_true',
                       help='clip adapter; use -a to specify adapter (default CTGTAGGCACCATCAAT)')
+                                                                             #CTGTAGGCACCATCAAT
     (options, args) = parser.parse_args()
 
     if options.gse == None:
