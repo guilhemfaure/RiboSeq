@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 rRNA=../../../assembly/Bsubtilis/NC_00964/tRNA_rRNA # index of tRNA_rRNA sequence
 genome=../../../assembly/Bsubtilis/NC_00964/genome # index of the genome sequence
 read=SRR407278_clip.fastq.gz # read free from adapter
