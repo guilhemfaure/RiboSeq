@@ -28,6 +28,7 @@ class Genbank:
         # Create a _gb variable
         self._load_gb()
 
+        # Extract annotated 16S
         self.extract_16S()
 
     def _download_gb(self):
@@ -104,12 +105,6 @@ class Genbank:
         print (self._gb.features)
         print (self._gb.id)
         print (self._gb.name)
-
-
-
-
-
-
 
 
 
