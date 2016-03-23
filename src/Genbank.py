@@ -62,7 +62,7 @@ class Genbank:
         :return:
         '''
 
-        self._gb = SeqIO.parse(self._handle, 'genbank')
+        self._gb = SeqIO.read(self._handle, 'genbank')
 
     def extract_16S(self):
         '''
@@ -70,10 +70,44 @@ class Genbank:
         :return:
         '''
 
-        print (self._gb)
-        for gene in self._gb:
-            print (dir(gene))
-            break
+        fasta_format = '>{type}|{genome}|' \
+                       'position={start}-{stop}:{strand}' \
+                       '|locus={locus}' \
+                       '|gene={gene}' \
+                       '|product={product}\n' \
+                       '{seq}\n'
+        is_16S = lambda x:True if sum([True for i in x if '16S ribosomal RNA' in i]) else False
+
+        for gene in self._gb.features:
+
+            if 'rRNA' in gene.type:
+                if 'product' in gene.qualifiers:
+
+                    # Look for 16S annotation
+                    if is_16S(gene.qualifiers['product']):
+                        d_info = {'genome':self.id+' '+self._gb.id, 'type':gene.type}
+
+                        d_info['seq']  = gene.extract(self._gb.seq)
+                        d_info['name'] = ' '.join(gene.qualifiers['product'])
+                        d_info['gene'] = ','.join(gene.qualifiers['gene'])
+                        d_info['locus']= ','.join(gene.qualifiers['locus_tag'])
+                        d_info['start']     = gene.location.start.position
+                        d_info['stop']      = gene.location.end.position
+                        d_info['strand']    = gene.location.strand
+                        d_info['product']   = ','.join(gene.qualifiers['product'])
+
+                        print (fasta_format.format(**d_info))
+
+        print (self._gb.annotations)
+        print (self._gb.dbxrefs)
+        print (self._gb.description)
+        print (self._gb.features)
+        print (self._gb.id)
+        print (self._gb.name)
+
+
+
+
 
 
 
