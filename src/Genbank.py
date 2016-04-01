@@ -95,7 +95,9 @@ class Genbank:
 
     def dump_gb(self, p_output):
         '''
-        <Script Mode>
+        <Script Mode> Obsolete ==> But normally faster than the current save_genbank,
+        I switched to save_genbank since it is more conveninent and I case used loading data
+        Once this function is launched, we lost data from memory
         Write the Genbank file from the script mode
         :param p_output: output path for genbank
         :return:
@@ -104,14 +106,14 @@ class Genbank:
         with open(p_output, 'w') as fout:
             fout.write(self._handle.read())
 
-
         print ('Genbank available at: ', p_output)
-        #self._handle.close()
+
 
         return
 
     def _load_gb(self):
         '''
+        <Class mode or Script mode>
         Load GB into memory
         :return:
         '''
@@ -179,7 +181,7 @@ class Genbank:
 
     def save_genbank(self, output):
         '''
-        <Class mode>
+        <Class mode or Script mode>
         Save genbank into a file
         :return:
         '''
