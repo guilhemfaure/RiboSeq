@@ -9,9 +9,13 @@ python3 Genbank.py -g NC_000913.3 [-o NC_000913.3.gb]
 Get 16s
 python3 Genbank.py -g NC_000913.3 -m 16s.fasta
 
+Get Exon
+python3 Genbank.py -g NC_000913.3 -e exon.fasta
+
 <Class mode>
 myGB = Genbank(id = 'NC_000913.3')
 myGB.   extract_16s('output.file')
+        extract_exon('output.file')
         save_genbank('output.gb')
 
 '''
@@ -50,6 +54,12 @@ class Genbank:
         if kwargs.get('rRNA16s'):
             self._load_gb()
             self.extract_16S(kwargs.get('rRNA16s'))
+            return None
+
+        # Extract Exon into a file
+        if kwargs.get('exon'):
+            self._load_gb()
+            self.extract_exon(kwargs.get('exon'))
             return None
 
 
@@ -103,6 +113,66 @@ class Genbank:
         return
 
 
+    def extract(self, output = None, **sequence):
+        '''
+        <Class mode or Script mode>
+        Extract 16S fasta from the genbank annotation
+        if output is specified it dumps the sequences into a file
+        :return: d_seq [header] -> sequence
+        '''
+
+        if output:
+            fout = open(output, 'w')
+        d_seq = {}
+        fasta_format = '>{type}|{genome}|' \
+                       'position={start}-{stop}:{strand}' \
+                       '|locus={locus}' \
+                       '|gene={gene}' \
+                       '|product={product}\n' \
+                       '{seq}\n'
+        is_16S = lambda x:True if sum([True for i in x if '16S ribosomal RNA' in i]) else False
+
+
+        sequence_to_extract = []
+
+        if sequence.get():
+            pass
+
+
+        for gene in self._gb.features:
+
+            if 'rRNA' in gene.type:
+                if 'product' in gene.qualifiers:
+
+                    # Look for 16S annotation
+                    if is_16S(gene.qualifiers['product']):
+                        d_info = {'genome':self.id+' '+self._gb.id, 'type':gene.type}
+
+                        d_info['seq']  = gene.extract(self._gb.seq)
+                        d_info['name'] = ' '.join(gene.qualifiers['product'])
+                        d_info['gene'] = ','.join(gene.qualifiers['gene'])
+                        d_info['locus']= ','.join(gene.qualifiers['locus_tag'])
+                        d_info['start']     = gene.location.start.position
+                        d_info['stop']      = gene.location.end.position
+                        d_info['strand']    = gene.location.strand
+                        d_info['product']   = ','.join(gene.qualifiers['product'])
+
+                        str_fasta = fasta_format.format(**d_info)
+
+
+
+                        header, seq, _ = str_fasta.split('\n')
+                        d_seq[header] = seq
+
+                        if output:
+                            fout.write(str_fasta)
+
+        if output:
+            fout.close()
+
+        return d_seq
+
+
     def extract_16S(self, output = None):
         '''
         <Class mode or Script mode>
@@ -152,12 +222,101 @@ class Genbank:
             fout.close()
 
         return d_seq
-        # print (self._gb.annotations)
-        # print (self._gb.dbxrefs)
-        # print (self._gb.description)
-        # print (self._gb.features)
-        # print (self._gb.id)
-        # print (self._gb.name)
+
+    def extract_exon(self, output = None):
+        '''
+        <Class mode or Script mode>
+        Extract exon fasta from the genbank annotation
+        if output is specified it dumps the sequences into a file
+        :return: d_seq [header] -> sequence
+        '''
+
+        if output:
+            fout = open(output, 'w')
+        d_seq = {}
+        fasta_format = '>{type}|{genome}|' \
+                       'position={start}-{stop}:{strand}' \
+                       '|locus={locus}' \
+                       '|gene={gene}' \
+                       '|product={product}\n' \
+                       '{seq}\n'
+
+        for gene in self._gb.features:
+
+            if 'CDS' in gene.type:
+                if 'product' in gene.qualifiers: # We remove pseudogene
+
+                    d_info = {'genome':self._gb.id, 'type':gene.type}
+
+                    d_info['seq']  = gene.extract(self._gb.seq)
+                    d_info['name'] = ' '.join(gene.qualifiers['product'])
+                    d_info['gene'] = ','.join(gene.qualifiers['gene'])
+                    d_info['locus']= ','.join(gene.qualifiers['locus_tag'])
+                    d_info['start']     = gene.location.start.position
+                    d_info['stop']      = gene.location.end.position
+                    d_info['strand']    = gene.location.strand
+                    d_info['product']   = ','.join(gene.qualifiers['product'])
+
+                    str_fasta = fasta_format.format(**d_info)
+
+                    header, seq, _ = str_fasta.split('\n')
+                    d_seq[header] = seq
+
+                    if output:
+                        fout.write(str_fasta)
+
+        if output:
+            fout.close()
+
+        return d_seq
+
+    def extract_rRNA(self, output = None):
+        '''
+        <Class mode or Script mode>
+        Extract rRNA and tRNA fasta from the genbank annotation
+        if output is specified it dumps the sequences into a file
+        :return: d_seq [header] -> sequence
+        '''
+
+        if output:
+            fout = open(output, 'w')
+        d_seq = {}
+        fasta_format = '>{type}|{genome}|' \
+                       'position={start}-{stop}:{strand}' \
+                       '|locus={locus}' \
+                       '|gene={gene}' \
+                       '|product={product}\n' \
+                       '{seq}\n'
+
+        for gene in self._gb.features:
+
+            if gene.type in ['tRNA', 'rRNA']:
+                if 'product' in gene.qualifiers: # We remove pseudogene
+
+                    d_info = {'genome':self._gb.id, 'type':gene.type}
+
+                    d_info['seq']  = gene.extract(self._gb.seq)
+                    d_info['name'] = ' '.join(gene.qualifiers['product'])
+                    d_info['gene'] = ','.join(gene.qualifiers['gene'])
+                    d_info['locus']= ','.join(gene.qualifiers['locus_tag'])
+                    d_info['start']     = gene.location.start.position
+                    d_info['stop']      = gene.location.end.position
+                    d_info['strand']    = gene.location.strand
+                    d_info['product']   = ','.join(gene.qualifiers['product'])
+
+                    str_fasta = fasta_format.format(**d_info)
+
+                    header, seq, _ = str_fasta.split('\n')
+                    d_seq[header] = seq
+
+                    if output:
+                        fout.write(str_fasta)
+
+        if output:
+            fout.close()
+
+        return d_seq
+
 
     def save_genbank(self, output):
         '''
@@ -178,7 +337,8 @@ if __name__ == '__main__':
     usage = "usage: %prog [-h ] -g <Genome id assembly NC_xxxx> [-o output.gb]"
     parser = optparse.OptionParser(usage = usage)
     parser.add_option('-g', '--genbank', dest='genbank', help='Genbank file full size', default = None)
-    parser.add_option('-o', '--output', dest='output', help='output file', default = None)
+    parser.add_option('-e', '--exon', dest='exon', help='dump exon file', default = None)
+    parser.add_option('-o', '--output', dest='output', help='dump Genbankfile', default = None)
     parser.add_option('-m', '--r16s', dest='rRNA16s', help='dump 16S fasta', default = None)
     (options, args) = parser.parse_args()
 
@@ -193,6 +353,10 @@ if __name__ == '__main__':
     if options.genbank and options.rRNA16s:
         MyGB = Genbank(id = options.genbank, rRNA16s = options.rRNA16s)
         sys.exit('Genbank:'+options.genbank+' available at:'+options.rRNA16s)
+
+    if options.genbank and options.exon:
+        MyGB = Genbank(id = options.genbank, exon = options.exon)
+        sys.exit('Genbank:'+options.genbank+' available at:'+options.exon)
 
     if options.genbank:
         MyGB = Genbank(id = options.genbank, dump = options.genbank+'.gb')
