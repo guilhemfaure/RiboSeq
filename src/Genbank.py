@@ -48,11 +48,22 @@ class Genbank:
         :return:
         '''
 
-        # From an id we load from internet
+        # Only to dump genbank
+        ##print (kwargs)
+        if kwargs.get('id') and kwargs.get('output') and len(kwargs.get('extract'))==0:
+            print ('Dump genbank')
+            self.id = kwargs.get('id')
+            self._handle = self._download_gb()
+            self.dump_gb(kwargs.get('output'))
+            return None
+
+
         if kwargs.get('id'):
             self.id = kwargs.get('id')
             self._handle = self._download_gb()
             self._load_gb()
+
+
 
         # From a local file
         if kwargs.get('input'):
@@ -140,9 +151,13 @@ class Genbank:
                        '|gene={gene}' \
                        '|product={product}\n' \
                        '{seq}\n'
-        is_16S = lambda x:True if sum([True for i in x if '16S ribosomal RNA' in i]) else False
 
-        print (sequence, output)
+        # Correction: we can grab 16S only by searching 16S in rRNA product
+        is_16S = lambda x:True if sum([True for i in x if '16S' in i]) else False
+
+        #print (sequence, output)
+
+        nb_seq = 0
 
         for gene in self._gb.features:
 
@@ -153,15 +168,31 @@ class Genbank:
                     d_info = {'genome':self._gb.id, 'type':gene.type}
 
                     d_info['seq']  = gene.extract(self._gb.seq)
-                    d_info['name'] = ' '.join(gene.qualifiers['product'])
-                    d_info['gene'] = ','.join(gene.qualifiers['gene'])
-                    d_info['locus']= ','.join(gene.qualifiers['locus_tag'])
+
+                    if 'name' not in gene.qualifiers:
+                        d_info['name'] = ''
+                    else:
+                        d_info['name'] = ' '.join(gene.qualifiers['product'])
+
+
+                    if 'gene' not in gene.qualifiers:
+                        d_info['gene'] = ''
+                    else:
+                        d_info['gene'] = ','.join(gene.qualifiers['gene'])
+
+                    if 'locus' not in gene.qualifiers:
+                        d_info['locus']= ''
+                    else:
+                        d_info['locus']= ','.join(gene.qualifiers['locus_tag'])
                     d_info['start']     = gene.location.start.position
                     d_info['stop']      = gene.location.end.position
                     d_info['strand']    = gene.location.strand
+
                     d_info['product']   = ','.join(gene.qualifiers['product'])
 
                     str_fasta = fasta_format.format(**d_info)
+
+
 
                     if 'r16s' in sequence and is_16S(gene.qualifiers['product']) is False:
                         continue
@@ -171,9 +202,13 @@ class Genbank:
 
                     if output:
                         fout.write(str_fasta)
+                        #print (gene.qualifiers['product'])
+                        nb_seq += 1
 
         if output:
             fout.close()
+
+        print (self.id.split('.')[0], nb_seq)
 
         return d_seq
 
